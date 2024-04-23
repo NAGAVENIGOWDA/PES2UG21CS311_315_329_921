@@ -25,7 +25,7 @@ raft_node.start()
 @app.route('/')
 def index():
     return render_template('index.html')
-
+                                                                                                                                                    
 @app.route('/tasks', methods=['GET', 'POST'])
 def tasks():
     if request.method == 'GET':
