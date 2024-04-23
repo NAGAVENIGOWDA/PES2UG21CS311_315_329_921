@@ -127,7 +127,7 @@ def append_entries():
             for i in range(raft_node.last_applied + 1, raft_node.commit_index + 1):
                 if i < 0 or i >= len(raft_node.log) or raft_node.log[i] is None:
                     continue  # Ignore out-of-range or None entries
-                apply_entry_to_state_machine(raft_node.log[i]['data'])
+                apply_entry_to_state_machine(raft_node.log[i]['data']) 
             raft_node.last_applied = raft_node.commit_index
 
     return jsonify(response_data), 200
