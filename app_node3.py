@@ -94,6 +94,45 @@ def request_vote():
 
     return jsonify({'vote_granted': vote_granted})
 
+@app.route('/append_entries', methods=['POST'])
+def append_entries():
+    data = request.json
+    leader_id = data.get('leader_id')
+    prev_log_index = data.get('prev_log_index')
+    prev_log_term = data.get('prev_log_term')
+    entries = data.get('entries')
+    leader_commit = data.get('leader_commit')
+
+    response_data = {}
+
+    # Check if the previous log entry matches
+    if prev_log_index >= len(raft_node.log) or (prev_log_index >= 0 and raft_node.log[prev_log_index]['term'] != prev_log_term):
+        response_data['success'] = False
+        response_data['last_log_index'] = len(raft_node.log) - 1
+    else:
+        response_data['success'] = True
+
+        # Append new entries to the log
+        if entries:
+            for entry in entries:
+                if entry['index'] >= len(raft_node.log) or entry['index'] < 0:
+                    continue  # Ignore out-of-range indices
+                if raft_node.log[entry['index']] is None or raft_node.log[entry['index']]['term'] != entry['term']:
+                    raft_node.log[entry['index']] = {'term': entry['term'], 'data': entry['data']}
+
+        # Update commit index
+        if leader_commit > raft_node.commit_index:
+            raft_node.commit_index = min(leader_commit, len(raft_node.log) - 1)
+            # Apply committed entries to state machine
+            for i in range(raft_node.last_applied + 1, raft_node.commit_index + 1):
+                if i < 0 or i >= len(raft_node.log) or raft_node.log[i] is None:
+                    continue  # Ignore out-of-range or None entries
+                apply_entry_to_state_machine(raft_node.log[i]['data'])
+            raft_node.last_applied = raft_node.commit_index
+
+    return jsonify(response_data), 200
+
+
 if __name__ == '__main__':
     app.run(debug=True)
 

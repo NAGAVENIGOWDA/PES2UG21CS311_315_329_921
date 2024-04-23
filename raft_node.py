@@ -19,7 +19,7 @@ class RaftNode:
         self.match_index = {peer: 0 for peer in peers}
         self.election_timer = None
         self.heartbeat_timer = None
-
+ 
     def start(self):
         self.start_election_timer()
 
