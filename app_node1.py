@@ -19,11 +19,7 @@ def apply_entry_to_state_machine(data):
     the provided data to your system's state.
     """
     print("Applying entry to state machine:", data)
-
-
-
-
-                
+             
 raft_node = RaftNode(node_id=1, peers=[2, 3], flask_url="http://localhost:5000")
 raft_node.start()
 @app.route('/')
@@ -122,8 +118,7 @@ def append_entries():
             raft_node.last_applied = raft_node.commit_index
 
     return jsonify(response_data), 200
-
-
+                                               
 if __name__ == '__main__':
     app.run(debug=True)
 
