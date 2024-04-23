@@ -120,17 +120,16 @@ def append_entries():
         if entries:
             for entry in entries:
                 if entry['index'] >= len(raft_node.log) or entry['index'] < 0:
-                    continue  # Ignore out-of-range indices
+                    continue  
                 if raft_node.log[entry['index']] is None or raft_node.log[entry['index']]['term'] != entry['term']:
                     raft_node.log[entry['index']] = {'term': entry['term'], 'data': entry['data']}
 
         # Update commit index
         if leader_commit > raft_node.commit_index:
             raft_node.commit_index = min(leader_commit, len(raft_node.log) - 1)
-            # Apply committed entries to state machine
             for i in range(raft_node.last_applied + 1, raft_node.commit_index + 1):
                 if i < 0 or i >= len(raft_node.log) or raft_node.log[i] is None:
-                    continue  # Ignore out-of-range or None entries
+                    continue
                 apply_entry_to_state_machine(raft_node.log[i]['data']) 
             raft_node.last_applied = raft_node.commit_index
 
