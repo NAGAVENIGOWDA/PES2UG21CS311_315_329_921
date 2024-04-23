@@ -20,12 +20,16 @@ def apply_entry_to_state_machine(data):
     """
     print("Applying entry to state machine:", data)
 
+
+
+
+                
 raft_node = RaftNode(node_id=1, peers=[2, 3], flask_url="http://localhost:5000")
 raft_node.start()
 @app.route('/')
 def index():
     return render_template('index.html')
-                                                                                                                                                    
+
 @app.route('/tasks', methods=['GET', 'POST'])
 def tasks():
     if request.method == 'GET':
