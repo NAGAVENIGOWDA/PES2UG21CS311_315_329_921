@@ -1,11 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 import mysql.connector
 import threading
-from raft_node import RaftNode  # Import the RaftNode class
+from raft_node import RaftNode 
 from flask import jsonify
 app = Flask(__name__)
 
-# Connect to the MySQL database
 db_connection = mysql.connector.connect(
     host="localhost",
     user="your_username",
@@ -20,13 +19,9 @@ def apply_entry_to_state_machine(data):
     the provided data to your system's state.
     """
     print("Applying entry to state machine:", data)
-    # Here you would implement the actual logic to apply the data to your state machine
 
-# Raft node initialization
 raft_node = RaftNode(node_id=1, peers=[2, 3], flask_url="http://localhost:5000")
-raft_node.start()  # Start the Raft node
-
-# Routes for task management
+raft_node.start()
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -34,21 +29,16 @@ def index():
 @app.route('/tasks', methods=['GET', 'POST'])
 def tasks():
     if request.method == 'GET':
-        # Retrieve tasks from the database
         db_cursor.execute("SELECT * FROM tasks")
         tasks = db_cursor.fetchall()
-        # Convert task data to dictionary format
         tasks_dict = [{'id': task[0], 'title': task[1], 'description': task[2], 'status': task[3]} for task in tasks]
         return jsonify(tasks_dict)
     elif request.method == 'POST':
         task_data = request.json
-        # Add task to the database
         db_cursor.execute("INSERT INTO tasks (title, description, status) VALUES (%s, %s, %s)", (task_data['title'], task_data['description'], task_data['status']))
         db_connection.commit()
-        # Retrieve the added task from the database
         db_cursor.execute("SELECT * FROM tasks WHERE id = LAST_INSERT_ID()")
         added_task = db_cursor.fetchone()
-        # Convert added task data to dictionary format
         added_task_dict = {'id': added_task[0], 'title': added_task[1], 'description': added_task[2], 'status': added_task[3]}
         return jsonify({"message": "Task added successfully", "task": added_task_dict}), 201
 
@@ -56,7 +46,6 @@ def tasks():
 def update_or_delete_task(task_id):
     if request.method == 'PATCH':
         updated_data = request.json
-        # Check which fields are present in the request and update only those fields
         if 'title' in updated_data:
             db_cursor.execute("UPDATE tasks SET title = %s WHERE id = %s", (updated_data['title'], task_id))
         if 'description' in updated_data:
@@ -72,9 +61,6 @@ def update_or_delete_task(task_id):
         db_connection.commit()
         return jsonify({"message": "Task deleted successfully"})
 
-
-
-# Variables to keep track of current term and who we voted for
 current_term = 0
 voted_for = None
 
@@ -88,7 +74,6 @@ def request_vote():
     last_log_index = data.get('last_log_index')
     last_log_term = data.get('last_log_term')
 
-    # Implement Raft voting logic here
     if term > current_term and (voted_for is None or voted_for == candidate_id):
         current_term = term
         voted_for = candidate_id
@@ -109,14 +94,13 @@ def append_entries():
 
     response_data = {}
 
-    # Check if the previous log entry matches
     if prev_log_index >= len(raft_node.log) or (prev_log_index >= 0 and raft_node.log[prev_log_index]['term'] != prev_log_term):
         response_data['success'] = False
         response_data['last_log_index'] = len(raft_node.log) - 1
     else:
         response_data['success'] = True
 
-        # Append new entries to the log
+
         if entries:
             for entry in entries:
                 if entry['index'] >= len(raft_node.log) or entry['index'] < 0:
@@ -124,7 +108,7 @@ def append_entries():
                 if raft_node.log[entry['index']] is None or raft_node.log[entry['index']]['term'] != entry['term']:
                     raft_node.log[entry['index']] = {'term': entry['term'], 'data': entry['data']}
 
-        # Update commit index
+
         if leader_commit > raft_node.commit_index:
             raft_node.commit_index = min(leader_commit, len(raft_node.log) - 1)
             for i in range(raft_node.last_applied + 1, raft_node.commit_index + 1):
